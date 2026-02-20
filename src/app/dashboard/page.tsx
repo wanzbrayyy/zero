@@ -7,10 +7,11 @@ import { movieService } from "@/services/api";
 import { MovieCard } from "@/components/ui/MovieCard";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFire, faPlay, faInfoCircle, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+import { useAppContext } from "@/context/AppContext"; // Import Context API
 
 export default function Dashboard() {
+  const { user } = useAppContext(); // Ambil data user dari context
   const [greeting, setGreeting] = useState("");
-  const [userName, setUserName] = useState("Creator");
   const [homeData, setHomeData] = useState<any>(null);
   const [trendingData, setTrendingData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,31 +24,24 @@ export default function Dashboard() {
     else if (hour < 18) setGreeting("Good Afternoon");
     else setGreeting("Good Evening");
 
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser);
-        setUserName(parsed.username || parsed.firstName || "Creator");
-      } catch (e) {
-        setUserName("Creator");
-      }
-    }
-
     const fetchData = async () => {
       setIsLoading(true);
+      setHomeError(null); // Reset error state
+      setTrendingError(null);
+
       try {
         const homePromise = movieService.getHomePage();
         const trendingPromise = movieService.getTrending();
 
         const [home, trending] = await Promise.all([homePromise, trendingPromise]);
 
-        if (home && home.status === 'success') {
+        if (home && home.status === 'success' && home.data) {
           setHomeData(home);
         } else {
           setHomeError(home?.message || "Failed to fetch homepage data.");
         }
 
-        if (trending && trending.status === 'success') {
+        if (trending && trending.status === 'success' && trending.data) {
           setTrendingData(trending);
         } else {
           setTrendingError(trending?.message || "Failed to fetch trending data.");
@@ -136,7 +130,7 @@ export default function Dashboard() {
       <div className="pl-4 md:pl-12 mt-6 space-y-8">
         <div className="pr-4 md:pr-12">
           <h2 className="text-lg md:text-xl font-light text-gray-300">
-            {greeting}, <span className="font-bold text-white">{userName}</span>
+            {greeting}, <span className="font-bold text-white">{user.username}</span>
           </h2>
         </div>
 
@@ -165,13 +159,12 @@ export default function Dashboard() {
             <p className="text-sm">Could not load trending movies.</p>
             <p className="text-xs">{trendingError}</p>
           </div>
-        ) : !isLoading && (!trendingData || !trendingData.data || !trendingData.data.items) && (
+        ) : (!isLoading && (!trendingData || !trendingData.data || !trendingData.data.items)) && (
            <div className="flex flex-col items-center justify-center py-10 text-gray-500">
             <FontAwesomeIcon icon={faExclamationTriangle} className="text-3xl mb-3" />
             <p className="text-sm">No trending movies found.</p>
           </div>
         )}
-
 
         {homeData?.data?.operatingList?.map((op: any, index: number) => {
           if (op.subjects && op.subjects.length > 0) {
