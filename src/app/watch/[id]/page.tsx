@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -58,32 +59,35 @@ export default function WatchPage() {
         const reqSeason = isSeries ? season : 0;
         const reqEpisode = isSeries ? episode : 0;
 
+        console.log(`Fetching data for ID: ${id}, Season: ${reqSeason}, Episode: ${reqEpisode}`);
+
         const data = await movieService.getVideoSource(id, reqSeason, reqEpisode);
         
         if (isMounted && data?.data) {
+          console.log("API Response Data:", data.data); // Log data dari API
           setSourceData(data);
           
-          // PERBAIKAN LOGIKA PEMILIHAN KUALITAS
           if (data.data.processedSources && data.data.processedSources.length > 0) {
             const sortedSources = [...data.data.processedSources].sort((a: any, b: any) => b.quality - a.quality);
             
-            // Coba ambil kualitas prioritas, jika tidak ada, ambil yang pertama
-            const defaultSource = sortedSources.find(s => s.quality === 720) || 
-                                  sortedSources.find(s => s.quality === 480) || 
-                                  sortedSources[0]; // Ambil yang pertama jika tidak ada 720p/480p
+            const defaultSource = sortedSources.find((s: any) => s.quality === 720) || 
+                                  sortedSources.find((s: any) => s.quality === 480) || 
+                                  sortedSources[0];
             
-            setSelectedQuality(defaultSource); // Set kualitas terpilih
+            console.log("Selected default quality:", defaultSource);
+            setSelectedQuality(defaultSource);
           } else {
-            setSelectedQuality(null); // Jika tidak ada processedSources, reset selectedQuality
+            console.warn("No processedSources found in API response.");
+            setSelectedQuality(null); // Pastikan null jika tidak ada sources
           }
         } else {
-          // Jika data.data tidak ada atau null, berarti backend mengembalikan error tapi status OK, atau data tidak lengkap
-          setVideoError(true); // Tampilkan error jika data tidak valid
+          console.error("API response invalid or empty:", data);
+          setVideoError(true);
           setSelectedQuality(null);
         }
       } catch (error) {
         if (isMounted) {
-          setVideoError(true); // Tampilkan error jika fetch gagal total
+          setVideoError(true); 
           console.error("Fetch error in WatchPage:", error);
         }
       } finally {
@@ -98,8 +102,13 @@ export default function WatchPage() {
 
   useEffect(() => {
     if (videoRef.current && selectedQuality) {
+      console.log("Attempting to load video with URL:", selectedQuality.proxyUrl);
       videoRef.current.load();
-      videoRef.current.play().catch(() => {});
+      // Coba play, tangani jika autoplay ditolak oleh browser
+      videoRef.current.play().catch((e) => {
+        console.warn("Autoplay prevented or failed:", e);
+        // Anda bisa menambahkan fallback UI di sini jika autoplay gagal
+      });
     }
   }, [selectedQuality]);
 
@@ -172,11 +181,13 @@ export default function WatchPage() {
               playsInline
               preload="auto"
               controlsList="nodownload"
-              onError={() => setVideoError(true)}
+              onError={() => {
+                console.error("Video playback failed. Setting videoError to true.");
+                setVideoError(true);
+              }}
               src={selectedQuality.proxyUrl}
             />
           ) : (
-            // TAMPILKAN INI JIKA TIDAK ADA KUALITAS YANG TERSEDIA
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-[#080808]">
               <FontAwesomeIcon icon={faExclamationTriangle} className="text-3xl text-gray-700 mb-3" />
               <p className="text-gray-400 text-sm font-bold">No Sources Available</p>
