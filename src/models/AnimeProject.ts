@@ -1,63 +1,34 @@
-import mongoose, { Schema, Model } from "mongoose";
-import { IAnimeProject } from "@/types";
+import mongoose from "mongoose";
 
-const AnimeProjectSchema: Schema<IAnimeProject> = new Schema(
-  {
-    title: {
-      type: String,
-      required: [true, "Title is required"],
-      trim: true,
-    },
-    slug: {
-      type: String,
-      unique: true,
-      lowercase: true,
-    },
-    description: {
-      type: String,
-      required: [true, "Description is required"],
-    },
-    genre: {
-      type: [String],
-      required: true,
-    },
-    owner: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    thumbnail: {
-      type: String,
-      default: "",
-    },
-    status: {
-      type: String,
-      enum: ["planning", "production", "completed", "on-hold"],
-      default: "planning",
-    },
-    members: [
-      {
-        user: { type: Schema.Types.ObjectId, ref: "User" },
-        role: { type: String, required: true },
-      },
-    ],
-  },
-  {
-    timestamps: true,
-  }
-);
+// Tipe yang hilang untuk model AnimeProject
+export interface IAnimeProject extends mongoose.Document {
+  title: string;
+  slug: string;
+  description: string;
+  genre: string[];
+  status: 'Recruiting' | 'In-Progress' | 'Completed' | 'Hiatus';
+  coverImage: string;
+  author: mongoose.Schema.Types.ObjectId;
+  teamMembers: mongoose.Schema.Types.ObjectId[];
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-AnimeProjectSchema.pre("save", function (next) {
-  if (this.isModified("title")) {
-    this.slug = this.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)+/g, "");
-  }
-  next();
-});
+// Tipe untuk sumber video dari API scraper Anda
+export interface IVideoSource {
+  id: string;
+  quality: number;
+  size: string;
+  format: string;
+  proxyUrl: string;
+}
 
-const AnimeProject: Model<IAnimeProject> =
-  mongoose.models.AnimeProject || mongoose.model<IAnimeProject>("AnimeProject", AnimeProjectSchema);
-
-export default AnimeProject;
+// Tipe untuk response lengkap dari API scraper
+export interface ISourceResponse {
+  status: string;
+  data: {
+    downloads: any[];
+    captions: any[];
+    processedSources: IVideoSource[];
+  };
+}
