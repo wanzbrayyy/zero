@@ -1,0 +1,63 @@
+zero-w-anime/
+├── .env.local                  # Konfigurasi Environment (DB_URI, API_KEYS)
+├── .eslintrc.json              # Config Linter
+├── .gitignore                  # File yang diabaikan Git
+├── next.config.js              # Config Next.js
+├── package.json                # Daftar dependency (React, FontAwesome, Mongoose, dll)
+├── postcss.config.js           # Config PostCSS (untuk Tailwind)
+├── tailwind.config.ts          # Config tema Tailwind (Warna, Font, Breakpoints)
+├── tsconfig.json               # Config TypeScript
+├── public/                     # Aset Statis (Gambar, Logo, Icon)
+│   ├── images/
+│   │   ├── hero-bg.jpg
+│   │   ├── logo-zero-w.png
+│   │   └── collaborative-placeholder.png
+│   └── fonts/
+├── src/                        # Source Code Utama
+│   ├── app/                    # ROUTING UTAMA (App Router)
+│   │   ├── favicon.ico
+│   │   ├── globals.css         # CSS Global (Import Tailwind & FontAwesome disini)
+│   │   ├── layout.tsx          # Layout Utama (Header & Footer nempel disini)
+│   │   ├── page.tsx            # HALAMAN HOME (Landing Page Sebelum Login)
+│   │   ├── (auth)/             # Grouping Route Auth (Login/Register)
+│   │   │   ├── login/
+│   │   │   │   └── page.tsx    # Halaman Login
+│   │   │   └── register/
+│   │   │   │   └── page.tsx    # Halaman Registrasi
+│   │   └── dashboard/          # Halaman Setelah Login (User Dashboard)
+│   │       ├── layout.tsx      # Layout khusus Dashboard (mungkin ada Sidebar)
+│   │       └── page.tsx        # Home Dashboard User
+│   │
+│   ├── components/             # KOMPONEN UI (Modular & Reusable)
+│   │   ├── ui/                 # "Atomic Design" dari Figma (Tombol, Input, Card dasar)
+│   │   │   ├── Button.tsx
+│   │   │   ├── Input.tsx
+│   │   │   ├── Card.tsx
+│   │   │   └── Modal.tsx
+│   │   ├── layout/             # Komponen Struktur Halaman
+│   │   │   ├── Navbar.tsx      # Navbar (Logo kiri, Login/Reg kanan)
+│   │   │   ├── Footer.tsx      # Footer (Copyright, Sosmed)
+│   │   │   └── Sidebar.tsx     # (Opsional untuk dashboard)
+│   │   ├── home/               # Komponen Khusus Halaman Depan (Landing)
+│   │   │   ├── HeroSection.tsx # Bagian "Unleash Your Anime Universe"
+│   │   │   ├── CollabGrid.tsx  # Grid Kolaborasi (Seniman, Penulis, dll)
+│   │   │   ├── AboutSection.tsx# Bagian "Tentang Kami/Misi"
+│   │   │   └── FeaturedAnime.tsx # Carousel Anime ala Netflix
+│   │   └── icons/              # Wrapper untuk FontAwesome (supaya rapi)
+│   │       └── Icon.tsx
+│   │
+│   ├── lib/                    # LOGIKA BACKEND & UTILITAS
+│   │   ├── db.ts               # Koneksi ke MongoDB
+│   │   ├── auth.ts             # Logika Autentikasi (NextAuth / JWT)
+│   │   └── utils.ts            # Helper function (misal: format tanggal)
+│   │
+│   ├── models/                 # SCHEMA MONGODB (Mongoose Models)
+│   │   ├── User.ts             # Schema Data User (Email, Password, Role)
+│   │   ├── AnimeProject.ts     # Schema Proyek Anime/Kolaborasi
+│   │   └── Collaboration.ts    # Schema Request Kolaborasi
+│   │
+│   ├── types/                  # DEFINISI TIPE TYPESCRIPT (Global)
+│   │   └── index.d.ts          # Interface data (IUser, IAnime, dll)
+│   │
+│   └── services/               # KOMUNIKASI API (Fetch Data)
+│       └── api.ts              # Kumpulan fungsi fetch ke database
