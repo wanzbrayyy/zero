@@ -9,3 +9,15 @@ export interface ICollaboration extends mongoose.Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface IUser extends mongoose.Document {
+  username: string;
+  email: string;
+  password?: string;
+  role: "user" | "admin" | "creator";
+  image?: string;
+  bio?: string;
+  skills?: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
