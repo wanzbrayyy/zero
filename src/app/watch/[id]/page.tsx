@@ -157,7 +157,6 @@ export default function WatchPage() {
               playsInline
               preload="auto"
               controlsList="nodownload"
-              referrerPolicy="no-referrer"
               onError={() => setVideoError(true)}
               src={selectedQuality.proxyUrl}
             />
