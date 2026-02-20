@@ -63,14 +63,29 @@ export default function WatchPage() {
         if (isMounted && data?.data) {
           setSourceData(data);
           
-          if (data.data.processedSources?.length > 0) {
-            const sorted = [...data.data.processedSources].sort((a: any, b: any) => b.quality - a.quality);
-            const defaultSource = sorted.find((s: any) => s.quality === 720) || sorted.find((s: any) => s.quality === 480) || sorted[0];
-            setSelectedQuality(defaultSource);
+          // PERBAIKAN LOGIKA PEMILIHAN KUALITAS
+          if (data.data.processedSources && data.data.processedSources.length > 0) {
+            const sortedSources = [...data.data.processedSources].sort((a: any, b: any) => b.quality - a.quality);
+            
+            // Coba ambil kualitas prioritas, jika tidak ada, ambil yang pertama
+            const defaultSource = sortedSources.find(s => s.quality === 720) || 
+                                  sortedSources.find(s => s.quality === 480) || 
+                                  sortedSources[0]; // Ambil yang pertama jika tidak ada 720p/480p
+            
+            setSelectedQuality(defaultSource); // Set kualitas terpilih
+          } else {
+            setSelectedQuality(null); // Jika tidak ada processedSources, reset selectedQuality
           }
+        } else {
+          // Jika data.data tidak ada atau null, berarti backend mengembalikan error tapi status OK, atau data tidak lengkap
+          setVideoError(true); // Tampilkan error jika data tidak valid
+          setSelectedQuality(null);
         }
       } catch (error) {
-        if (isMounted) setVideoError(true);
+        if (isMounted) {
+          setVideoError(true); // Tampilkan error jika fetch gagal total
+          console.error("Fetch error in WatchPage:", error);
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -127,7 +142,7 @@ export default function WatchPage() {
               <FontAwesomeIcon icon={faExclamationTriangle} className="text-4xl text-red-600 mb-4" />
               <p className="text-white font-bold text-base mb-2">Stream Error</p>
               <p className="text-gray-500 text-xs max-w-md mb-6">
-                Try a different quality or reload the page.
+                Could not load the video stream. Try reloading or checking the direct link.
               </p>
               {selectedQuality && (
                 <div className="flex gap-3">
@@ -161,9 +176,13 @@ export default function WatchPage() {
               src={selectedQuality.proxyUrl}
             />
           ) : (
+            // TAMPILKAN INI JIKA TIDAK ADA KUALITAS YANG TERSEDIA
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-[#080808]">
               <FontAwesomeIcon icon={faExclamationTriangle} className="text-3xl text-gray-700 mb-3" />
               <p className="text-gray-400 text-sm font-bold">No Sources Available</p>
+              <p className="text-gray-600 text-xs mt-1">
+                {isSeries ? "This episode might not be released yet, or no valid sources were found." : "No valid video sources were found for this movie."}
+              </p>
             </div>
           )}
         </div>
@@ -227,42 +246,52 @@ export default function WatchPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-800/50 text-sm">
-                    {sourceData?.data?.processedSources?.map((src: any) => (
-                      <tr 
-                        key={src.id} 
-                        className={`hover:bg-white/5 transition duration-200 cursor-pointer ${selectedQuality?.id === src.id ? 'bg-primary/5' : ''}`}
-                        onClick={() => { setSelectedQuality(src); setVideoError(false); }}
-                      >
-                        <td className="p-4 pl-6">
-                          <span className={`text-xs font-bold px-2 py-1 rounded ${src.quality >= 1080 ? 'text-primary bg-primary/10 border border-primary/20' : 'text-gray-300 bg-gray-800'}`}>
-                            {src.quality}p
-                          </span>
-                        </td>
-                        <td className="p-4 text-gray-400 font-mono text-xs">{formatSize(src.size)}</td>
-                        <td className="p-4 text-gray-500 text-[10px] font-bold text-center uppercase">{src.format}</td>
-                        <td className="p-4 pr-6 text-right">
-                          <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                            <button 
-                              onClick={() => { setSelectedQuality(src); setVideoError(false); }}
-                              className={`h-8 px-4 text-[10px] font-bold uppercase rounded border transition flex items-center gap-2 
-                                ${selectedQuality?.id === src.id 
-                                  ? 'bg-white text-black border-white' 
-                                  : 'bg-transparent border-gray-600 text-gray-300 hover:border-white hover:text-white'}`}
-                            >
-                              <FontAwesomeIcon icon={faPlay} /> Play
-                            </button>
-                            <a 
-                              href={src.proxyUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="h-8 px-4 bg-gray-800 hover:bg-gray-700 text-gray-300 text-[10px] font-bold uppercase rounded flex items-center gap-2 transition border border-gray-700"
-                            >
-                              <FontAwesomeIcon icon={faDownload} /> DL
-                            </a>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {sourceData?.data?.processedSources && sourceData.data.processedSources.length > 0 ? (
+                      sourceData.data.processedSources.map((src: any) => (
+                        <tr 
+                          key={src.id} 
+                          className={`hover:bg-white/5 transition duration-200 cursor-pointer ${selectedQuality?.id === src.id ? 'bg-primary/5' : ''}`}
+                          onClick={() => { setSelectedQuality(src); setVideoError(false); }}
+                        >
+                          <td className="p-4 pl-6">
+                            <span className={`text-xs font-bold px-2 py-1 rounded ${src.quality >= 1080 ? 'text-primary bg-primary/10 border border-primary/20' : 'text-gray-300 bg-gray-800'}`}>
+                              {src.quality}p
+                            </span>
+                          </td>
+                          <td className="p-4 text-gray-400 font-mono text-xs">{formatSize(src.size)}</td>
+                          <td className="p-4 text-gray-500 text-[10px] font-bold text-center uppercase">{src.format}</td>
+                          <td className="p-4 pr-6 text-right">
+                            <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                              <button 
+                                onClick={() => { setSelectedQuality(src); setVideoError(false); }}
+                                className={`h-8 px-4 text-[10px] font-bold uppercase rounded border transition flex items-center gap-2 
+                                  ${selectedQuality?.id === src.id 
+                                    ? 'bg-white text-black border-white' 
+                                    : 'bg-transparent border-gray-600 text-gray-300 hover:border-white hover:text-white'}`}
+                              >
+                                <FontAwesomeIcon icon={faPlay} /> Play
+                              </button>
+                              <a 
+                                href={src.proxyUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="h-8 px-4 bg-gray-800 hover:bg-gray-700 text-gray-300 text-[10px] font-bold uppercase rounded flex items-center gap-2 transition border border-gray-700"
+                              >
+                                <FontAwesomeIcon icon={faDownload} /> DL
+                              </a>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      !loading && !videoError && !sourceData?.data?.processedSources && (
+                        <tr>
+                          <td colSpan={4} className="p-8 text-center text-gray-500 text-xs italic">
+                            No valid sources found.
+                          </td>
+                        </tr>
+                      )
+                    )}
                   </tbody>
                 </table>
               </div>
