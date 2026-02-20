@@ -34,6 +34,7 @@ const CollaborationSchema: Schema<ICollaboration> = new Schema(
 );
 
 const Collaboration: Model<ICollaboration> =
-  mongoose.models.Collaboration || mongoose.model<ICollaboration>("Collaboration", CollaborationSchema);
+  mongoose.models.Collaboration ||
+  mongoose.model<ICollaboration>("Collaboration", CollaborationSchema);
 
 export default Collaboration;
