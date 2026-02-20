@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -59,30 +58,22 @@ export default function WatchPage() {
         const reqSeason = isSeries ? season : 0;
         const reqEpisode = isSeries ? episode : 0;
 
-        console.log(`Fetching data for ID: ${id}, Season: ${reqSeason}, Episode: ${reqEpisode}`);
-
         const data = await movieService.getVideoSource(id, reqSeason, reqEpisode);
         
         if (isMounted && data?.data) {
-          console.log("API Response Data:", data.data); // Log data dari API
           setSourceData(data);
           
           if (data.data.processedSources && data.data.processedSources.length > 0) {
             const sortedSources = [...data.data.processedSources].sort((a: any, b: any) => b.quality - a.quality);
-            
-            const defaultSource = sortedSources.find((s: any) => s.quality === 720) || 
-                                  sortedSources.find((s: any) => s.quality === 480) || 
+            const defaultSource = sortedSources.find(s => s.quality === 720) || 
+                                  sortedSources.find(s => s.quality === 480) || 
                                   sortedSources[0];
-            
-            console.log("Selected default quality:", defaultSource);
             setSelectedQuality(defaultSource);
           } else {
-            console.warn("No processedSources found in API response.");
-            setSelectedQuality(null); // Pastikan null jika tidak ada sources
+            setSelectedQuality(null); // Reset jika tidak ada sources
           }
         } else {
-          console.error("API response invalid or empty:", data);
-          setVideoError(true);
+          setVideoError(true); // Error jika data tidak valid
           setSelectedQuality(null);
         }
       } catch (error) {
@@ -100,19 +91,27 @@ export default function WatchPage() {
     return () => { isMounted = false; };
   }, [id, isSeries, season, episode]);
 
+  // Handler untuk error video playback
+  const handleVideoError = () => {
+    console.error("Video playback error detected.");
+    setVideoError(true);
+  };
+
   useEffect(() => {
     if (videoRef.current && selectedQuality) {
       console.log("Attempting to load video with URL:", selectedQuality.proxyUrl);
       videoRef.current.load();
-      // Coba play, tangani jika autoplay ditolak oleh browser
       videoRef.current.play().catch((e) => {
         console.warn("Autoplay prevented or failed:", e);
-        // Anda bisa menambahkan fallback UI di sini jika autoplay gagal
+        // Jika autoplay gagal, mungkin perlu UI khusus di sini
       });
+    } else if (!selectedQuality && !loading) {
+      // Jika sudah tidak loading tapi tidak ada kualitas terpilih, berarti memang tidak ada source
+      setVideoError(true); // Tampilkan pesan error "No Sources Available"
     }
-  }, [selectedQuality]);
+  }, [selectedQuality, loading]);
 
-  if (!id) return null;
+  if (!id) return null; // Handle jika ID tidak ada
 
   return (
     <div className="min-h-screen bg-background text-text pb-20 overflow-x-hidden">
@@ -181,10 +180,7 @@ export default function WatchPage() {
               playsInline
               preload="auto"
               controlsList="nodownload"
-              onError={() => {
-                console.error("Video playback failed. Setting videoError to true.");
-                setVideoError(true);
-              }}
+              onError={handleVideoError}
               src={selectedQuality.proxyUrl}
             />
           ) : (
@@ -295,7 +291,8 @@ export default function WatchPage() {
                         </tr>
                       ))
                     ) : (
-                      !loading && !videoError && !sourceData?.data?.processedSources && (
+                      // Tampilkan pesan jika tidak ada sumber tapi juga tidak error dan tidak loading
+                      !loading && !videoError && (!sourceData?.data?.processedSources || sourceData.data.processedSources.length === 0) && (
                         <tr>
                           <td colSpan={4} className="p-8 text-center text-gray-500 text-xs italic">
                             No valid sources found.
