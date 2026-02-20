@@ -6,7 +6,7 @@ import { NavbarDashboard } from "@/components/layout/NavbarDashboard";
 import { movieService } from "@/services/api";
 import { MovieCard } from "@/components/ui/MovieCard";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFire, faPlay, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faFire, faPlay, faInfoCircle, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 
 export default function Dashboard() {
   const [greeting, setGreeting] = useState("");
@@ -14,6 +14,8 @@ export default function Dashboard() {
   const [homeData, setHomeData] = useState<any>(null);
   const [trendingData, setTrendingData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [homeError, setHomeError] = useState<string | null>(null);
+  const [trendingError, setTrendingError] = useState<string | null>(null);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -25,7 +27,7 @@ export default function Dashboard() {
     if (storedUser) {
       try {
         const parsed = JSON.parse(storedUser);
-        setUserName(parsed.firstName || parsed.username || "Creator");
+        setUserName(parsed.username || parsed.firstName || "Creator");
       } catch (e) {
         setUserName("Creator");
       }
@@ -34,15 +36,26 @@ export default function Dashboard() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [home, trending] = await Promise.all([
-          movieService.getHomePage(),
-          movieService.getTrending()
-        ]);
-        setHomeData(home);
-        setTrendingData(trending);
-      } catch (e) {
-        setHomeData(null);
-        setTrendingData(null);
+        const homePromise = movieService.getHomePage();
+        const trendingPromise = movieService.getTrending();
+
+        const [home, trending] = await Promise.all([homePromise, trendingPromise]);
+
+        if (home && home.status === 'success') {
+          setHomeData(home);
+        } else {
+          setHomeError(home?.message || "Failed to fetch homepage data.");
+        }
+
+        if (trending && trending.status === 'success') {
+          setTrendingData(trending);
+        } else {
+          setTrendingError(trending?.message || "Failed to fetch trending data.");
+        }
+        
+      } catch (e: any) {
+        setHomeError(e.message || "An unexpected error occurred.");
+        setTrendingError(e.message || "An unexpected error occurred.");
       } finally {
         setIsLoading(false);
       }
@@ -67,7 +80,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background text-text pb-20 overflow-x-hidden w-full max-w-[100vw]">
       <NavbarDashboard />
 
-      {heroItem && (
+      {heroItem ? (
         <div className="relative w-full h-[60vh] md:h-[80vh] min-h-[400px]">
           <div className="absolute inset-0">
             <img 
@@ -112,6 +125,12 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-[60vh] text-gray-500">
+          <FontAwesomeIcon icon={faExclamationTriangle} className="text-4xl mb-4" />
+          <p className="text-lg font-semibold">Could not load featured content.</p>
+          {homeError && <p className="text-sm mt-2">{homeError}</p>}
+        </div>
       )}
 
       <div className="pl-4 md:pl-12 mt-6 space-y-8">
@@ -121,14 +140,14 @@ export default function Dashboard() {
           </h2>
         </div>
 
-        {trendingData?.data?.items && trendingData.data.items.length > 0 && (
+        {trendingData?.data?.items && trendingData.data.items.length > 0 ? (
           <section className="w-full">
             <h3 className="text-sm md:text-lg font-bold text-white flex items-center gap-2 mb-3">
               Trending Now <FontAwesomeIcon icon={faFire} className="text-primary text-xs" />
             </h3>
             <div className="flex overflow-x-auto gap-3 pb-4 pr-4 scrollbar-hide snap-x">
               {trendingData.data.items.map((item: any) => (
-                <div key={item.subjectId} className="w-[110px] sm:w-[130px] md:w-[160px] flex-none snap-start">
+                <div key={item.subjectId} className="w-[110px] sm:w-[130px] md:w-[160px] lg:w-[180px] flex-none snap-start">
                   <MovieCard 
                     id={item.subjectId}
                     title={item.title}
@@ -140,7 +159,19 @@ export default function Dashboard() {
               ))}
             </div>
           </section>
+        ) : trendingError ? (
+          <div className="flex flex-col items-center justify-center py-10 text-gray-500">
+            <FontAwesomeIcon icon={faExclamationTriangle} className="text-3xl mb-3" />
+            <p className="text-sm">Could not load trending movies.</p>
+            <p className="text-xs">{trendingError}</p>
+          </div>
+        ) : !isLoading && (!trendingData || !trendingData.data || !trendingData.data.items) && (
+           <div className="flex flex-col items-center justify-center py-10 text-gray-500">
+            <FontAwesomeIcon icon={faExclamationTriangle} className="text-3xl mb-3" />
+            <p className="text-sm">No trending movies found.</p>
+          </div>
         )}
+
 
         {homeData?.data?.operatingList?.map((op: any, index: number) => {
           if (op.subjects && op.subjects.length > 0) {
@@ -167,6 +198,14 @@ export default function Dashboard() {
           }
           return null;
         })}
+        
+        {homeError && !heroItem && (
+           <div className="flex flex-col items-center justify-center py-10 text-gray-500">
+            <FontAwesomeIcon icon={faExclamationTriangle} className="text-3xl mb-3" />
+            <p className="text-sm">Could not load homepage sections.</p>
+            <p className="text-xs">{homeError}</p>
+          </div>
+        )}
       </div>
     </div>
   );
