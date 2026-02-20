@@ -70,10 +70,10 @@ export default function WatchPage() {
                                   sortedSources[0];
             setSelectedQuality(defaultSource);
           } else {
-            setSelectedQuality(null); // Reset jika tidak ada sources
+            setSelectedQuality(null); 
           }
         } else {
-          setVideoError(true); // Error jika data tidak valid
+          setVideoError(true);
           setSelectedQuality(null);
         }
       } catch (error) {
@@ -91,10 +91,20 @@ export default function WatchPage() {
     return () => { isMounted = false; };
   }, [id, isSeries, season, episode]);
 
-  // Handler untuk error video playback
   const handleVideoError = () => {
     console.error("Video playback error detected.");
     setVideoError(true);
+    // Jika ada kualitas lain, coba ganti ke kualitas berikutnya secara otomatis
+    if (sourceData?.data?.processedSources && sourceData.data.processedSources.length > 0) {
+      const currentSourceIndex = sourceData.data.processedSources.findIndex(
+        (s: any) => s.proxyUrl === videoRef.current?.currentSrc
+      );
+      if (currentSourceIndex !== -1 && currentSourceIndex < sourceData.data.processedSources.length - 1) {
+        const nextSource = sourceData.data.processedSources[currentSourceIndex + 1];
+        console.log("Attempting to switch to next quality:", nextSource);
+        setSelectedQuality(nextSource);
+      }
+    }
   };
 
   useEffect(() => {
@@ -103,15 +113,15 @@ export default function WatchPage() {
       videoRef.current.load();
       videoRef.current.play().catch((e) => {
         console.warn("Autoplay prevented or failed:", e);
-        // Jika autoplay gagal, mungkin perlu UI khusus di sini
+        // Jika autoplay gagal, set error agar UI yang sesuai muncul
+        setVideoError(true); 
       });
     } else if (!selectedQuality && !loading) {
-      // Jika sudah tidak loading tapi tidak ada kualitas terpilih, berarti memang tidak ada source
-      setVideoError(true); // Tampilkan pesan error "No Sources Available"
+      setVideoError(true); 
     }
   }, [selectedQuality, loading]);
 
-  if (!id) return null; // Handle jika ID tidak ada
+  if (!id) return null;
 
   return (
     <div className="min-h-screen bg-background text-text pb-20 overflow-x-hidden">
@@ -180,7 +190,7 @@ export default function WatchPage() {
               playsInline
               preload="auto"
               controlsList="nodownload"
-              onError={handleVideoError}
+              onError={handleVideoError} 
               src={selectedQuality.proxyUrl}
             />
           ) : (
@@ -291,7 +301,6 @@ export default function WatchPage() {
                         </tr>
                       ))
                     ) : (
-                      // Tampilkan pesan jika tidak ada sumber tapi juga tidak error dan tidak loading
                       !loading && !videoError && (!sourceData?.data?.processedSources || sourceData.data.processedSources.length === 0) && (
                         <tr>
                           <td colSpan={4} className="p-8 text-center text-gray-500 text-xs italic">
