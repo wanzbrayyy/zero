@@ -6,7 +6,7 @@ import { verifyPassword, generateToken } from "@/lib/auth";
 export async function POST(req: Request) {
   try {
     await dbConnect();
-    
+
     const body = await req.json();
     const { email, password } = body;
 
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
     const user = await User.findOne({ email }).select("+password");
 
-    if (!user) {
+    if (!user || !user.password) {
       return NextResponse.json(
         { message: "Invalid credentials" },
         { status: 401 }
@@ -35,24 +35,26 @@ export async function POST(req: Request) {
       );
     }
 
-    const token = generateToken({ 
-      id: user._id, 
-      email: user.email, 
-      role: user.role 
+    const token = generateToken({
+      id: user._id,
+      email: user.email,
+      role: user.role,
     });
 
-    return NextResponse.json({
-      message: "Login successful",
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        image: user.image
+    return NextResponse.json(
+      {
+        message: "Login successful",
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          image: user.image,
+        },
+        token,
       },
-      token
-    }, { status: 200 });
-
+      { status: 200 }
+    );
   } catch (error: any) {
     return NextResponse.json(
       { message: "Internal Server Error" },
